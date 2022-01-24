@@ -44,16 +44,21 @@ x0 = double(rescale(x0));
 %% lustig's VDS scheme 
 
 prob_map = genPDF([nx,ny], 8, target_delta, 2, 0,0);
+gavin_s = prob_map(:,208);
+prob_map = repmat(gavin_s, 1, 416);
 
 
 %% generate data
 SNR = 40;
         
 mask = binornd(1, prob_map, nx,ny);
+gavin_ss = mask(:, 208);
+mask = repmat(gavin_ss, 1, 416);
 delta=mean(mask(:));
 
 var0 = mean(abs(x0(:)).^2)/(10^(SNR/10));    
 noise = normrnd(0, sqrt(var0), nx,ny)./sqrt(2) + 1i* normrnd(0, sqrt(var0), nx,ny)./sqrt(2);
+noise = zeros(size(noise));
         
 dcoil = mask.*(fftnc(x0) + noise);
 
@@ -132,7 +137,7 @@ ista_res = abs(x0 - x_ista);
 sista_res = abs(x0 - x_sista);
 sureit_res = abs(x0 - x_sureit);
 vdamp_res = abs(x0 - x_vdamp);
-vdamp_s_res = abs(x0 - x_vdamp_s);
+vdamp_s_res = abs(x0 - ifftnc(dcoil)); % Comparison with zero-filled reconstruction
 
 thr = 0.3*max([sureit_res(:); ista_res(:)]); %clip for visualization
 
@@ -180,11 +185,11 @@ set(gca,'FontName','times')
 title('VDAMP-\alpha')
 
 subplot(2,6,6); 
-imagesc(abs(x_vdamp_s), [ 0 1] );
+imagesc(abs(ifftnc(dcoil)), [ 0 1] );
 axis image off;
 colormap(gca,'gray')
 set(gca,'FontName','times')
-title('VDAMP-S')
+title('ZF')
 
 subplot(2,6,7);
 imagesc(mask);
@@ -226,7 +231,7 @@ imagesc(vdamp_s_res, [0, thr ])
 axis image off;
 colormap(gca,'jet')
 set(gca,'FontName','times')
-title('VDAMP S error')
+title('ZF error')
 
 %%
 x_mnsq = mean(abs(x0(:)).^2);
